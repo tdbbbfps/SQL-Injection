@@ -20,8 +20,10 @@ def create_db():
                         password TEXT NOT NULL
                     )
                     """)
+            return True
     except sqlite3.Error as e:
         print(f"資料庫操作發生錯誤: {e}")
+        return False
 
 def create_user(username : str, password : str):
     """新增一位使用者到資料庫。"""
@@ -29,8 +31,8 @@ def create_user(username : str, password : str):
         # with 可以自動管理資源與清理
         with sqlite3.connect("test.db") as conn:
             cursor = conn.cursor()
-            # 檢查使用者是否已存在
-            cursor.execute("SELECT * FROM USERS WHERE username = ?", (username))
+            # 檢查使用者是否已存在                                     用元組傳進去，否則會被當成字串(每個字元都當成一個參數傳進去導致錯誤)
+            cursor.execute("SELECT * FROM USERS WHERE username = ?", (username,))
             is_user_exists  = cursor.fetchone()
             if is_user_exists:
                 print(f"使用者 {username} 已存在，無法重複建立。")
@@ -53,13 +55,15 @@ def create_user(username : str, password : str):
         return False
 
 def user_login(username : str, password : str):
+    """使用者登入   """
     try:
         with sqlite3.connect("test.db") as conn:
             cursor = conn.cursor()
             # 根據 username 取得 salt 和儲存的 hashed_password
-            cursor.execute("SELECT salt, password FROM USERS WHERE username = ?", (username))
+            cursor.execute("SELECT salt, password FROM USERS WHERE username = ?", (username,))
             result = cursor.fetchone()
             if not result:
+                print(f"使用者 {username} 不存在。")
                 return False
             # 取得 salt 和儲存的雜湊密碼
             salt, stored_hash = result
@@ -71,7 +75,8 @@ def user_login(username : str, password : str):
     except sqlite3.Error as e:
         print(f"資料庫操作發生錯誤: {e}")
 
-def is_password_strong(password     : str):
+def is_password_strong(password : str):
+    """檢查密碼強度"""
     # 從頭檢查 *\d是否有數字、*[a-z]是否有小寫字母、*[A-Z]是否有大寫字母
     # .{8,16}表示長度介於8到16之間
     
