@@ -1,30 +1,26 @@
-from database import create_db, create_user, user_login
-from models import User
+from routers.database import create_db, create_user, user_login
+from routers.models import User
+import hashlib
 
 def main():
-    # 1. 初始化資料庫並建立一個範例使用者
-    print("--- 系統初始化 ---")
     create_db()
-    admin_user = User(id=0, username="admin", password="supersecretpassword")
-    create_user(admin_user)
-    print(f"已建立使用者: {admin_user.username}\n")
+    username = str(input("請輸入欲建立的使用者名稱: "))
+    password = str(input("請輸入欲建立的使用者密碼: "))
+    print(hashlib.sha256(password.encode('utf-8')).hexdigest())
+    # assert create_user(new_user)
+    # print("繼續執行程式...")
+    if not create_user(username, password):
+        return
+    print("使用者建立成功!")
 
-    # 2. 模擬正常但失敗的登入
-    print("--- 測試 1: 正常但失敗的登入 ---")
-    username_attempt = "admin"
-    password_attempt = "wrongpassword"
-    print(f"嘗試登入: username='{username_attempt}', password='{password_attempt}'")
-    is_logged_in = user_login(username_attempt, password_attempt)
-    print(f"登入結果: {'成功' if is_logged_in else '失敗'}\n")
+    print("--- 測試登入 ---")
 
-    # 3. 模擬 SQL 注入攻擊
-    print("--- 測試 2: SQL 注入攻擊 ---")
-    # 注入的 payload，注意後面的 -- 用來註解掉密碼檢查
-    malicious_username = "' OR '1'='1' --"
-    dummy_password = "password_does_not_matter"
-    print(f"嘗試登入: username=\"{malicious_username}\", password='{dummy_password}'")
-    is_hacked = user_login(malicious_username, dummy_password)
-    print(f"登入結果: {'成功 (被駭入!)' if is_hacked else '失敗'}")
+    # username 輸入: ' ' OR '1'='1' 因為密碼不等於''，程式會檢查OR後面 '1'='1' 必然是true，會導致 SQL Injection(如果後端直接將字串帶入 SQL 查詢)
+    login_username = str(input("請輸入使用者名稱: "))
+    login_password = str(input("請輸入使用者密碼: "))
+    if not user_login(login_username, login_password):
+        return
+    print("登入成功!")
 
 
 if __name__ == "__main__":
