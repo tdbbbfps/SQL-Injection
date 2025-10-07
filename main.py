@@ -1,24 +1,15 @@
-from routers.database import create_db, create_user, user_login
-from routers.models import User
-import hashlib
+from fastapi import FastAPI
+from routers import router as user_router
+import uvicorn
 
-def main():
-    if not create_db():
-        return
-    print("資料庫建立、連接成功!")
-    
-    username = str(input("請輸入欲建立的使用者名稱: "))
-    password = str(input("請輸入欲建立的使用者密碼: "))
-    if not create_user(username, password):
-        return
+app = FastAPI(
+    title="SQL TEST",
+    version="1.0.0",
+    description="A simple fastapi project with sql.",
+)
 
-    # username 輸入: ' ' OR '1'='1' 因為密碼不等於''，程式會檢查OR後面 '1'='1' 必然是true，會導致 SQL Injection(如果後端直接將字串帶入 SQL 查詢)
-    login_username = str(input("請輸入使用者名稱: "))
-    login_password = str(input("請輸入使用者密碼: "))
-    if not user_login(login_username, login_password):
-        return
-    print("登入成功!")
+app.include_router(user_router, prefix="/user", tags=["user"])
 
-
-if __name__ == "__main__":
-    main()
+@app.get("/")
+async def root():
+    return {"message": "The root of the API."}

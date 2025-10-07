@@ -1,5 +1,5 @@
 import sqlite3
-from .models import User
+from .models import User, UserCreate
 import hashlib
 import re
 import os
@@ -25,12 +25,18 @@ def create_db():
         print(f"資料庫操作發生錯誤: {e}")
         return False
 
-def create_user(username : str, password : str):
+def create_user(email : str, username : str, password : str):
     """新增一位使用者到資料庫。"""
     try:
         # with 可以自動管理資源與清理
         with sqlite3.connect("test.db") as conn:
             cursor = conn.cursor()
+            # 檢查email是否存在
+            cursor.execute("SELECT * FROM USERS WHERE email = ?", (email, ))
+            is_email_exists = cursor.fetchone()
+            if is_email_exists:
+                print(f"Email {email} 已存在，無法重複建立。")
+                return False
             # 檢查使用者是否已存在          用元組傳進去，否則會被當成字串(每個字元都當成一個參數傳進去導致錯誤)
             cursor.execute("SELECT * FROM USERS WHERE username = ?", (username,))
             is_user_exists  = cursor.fetchone()
@@ -54,7 +60,7 @@ def create_user(username : str, password : str):
         print(f"資料庫操作發生錯誤: {e}")
         return False
 
-def user_login(username : str, password : str):
+def login_user(username : str, password : str):
     """使用者登入   """
     try:
         with sqlite3.connect("test.db") as conn:
