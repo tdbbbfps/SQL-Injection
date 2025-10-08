@@ -1,7 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from .schemas import UserRegister, UserLogin, UserUpdatePassword
-from .models import User
-from .database import create_user, login_user, update_user_password
+from . import database
 
 router = APIRouter()
 
@@ -9,20 +8,29 @@ router = APIRouter()
 async def root():
     return {"message": "Here's the root of the API."}
 
-@router.post("/user-register")
+# Registration endpoint
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def user_register(user : UserRegister):
-    if create_user(user):
+    if database.create_user(email=user.email, username=user.username, password=user.password):
         return {"message": f"User {user.username} created successfully."}
-    return {"message": "Failed to create user."}
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="Failed to create user. Email or username may already exist, or password is not strong enough."
+    )
 
-@router.get("/user-login")
+# Login endpoint
+@router.get("/login")
 async def user_login(user : UserLogin):
-    if login_user(user.username, user.password):
+    if database.login_user(user.username, user.password):
         return {"status": True, "message": f"User {user.username} logged in successfully."}
-    return {"status": False, "message": "Invalid username or password."}
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password.")
 
-@router.put("/user-update-password")
+# Update password endpoint
+@router.put("/update-password")
 async def user_update_password(user : UserUpdatePassword):
-    if update_user_password(user.username, user.old_password, user.new_password):
+    if database.update_user_password(user.username, user.old_password, user.new_password):
         return {"status": True, "message": f"User {user.username} password updated successfully."}
-    return {"status": False, "message": "Failed to update password. Please check your old password and ensure the new password meets the requirements."}
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Failed to update password. Please check your old password and ensure the new password meets the requirements."
+    )

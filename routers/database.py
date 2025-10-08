@@ -15,6 +15,7 @@ def create_db():
             cursor.execute("""
                     CREATE TABLE IF NOT EXISTS USERS(
                         id INTEGER PRIMARY KEY,
+                        email TEXT UNIQUE NOT NULL,
                         username TEXT UNIQUE NOT NULL, 
                         salt TEXT NOT NULL,
                         password TEXT NOT NULL
@@ -67,8 +68,8 @@ def login_user(username : str, password : str):
             cursor = conn.cursor()
             # 根據 username 取得 salt 和儲存的 hashed_password
             cursor.execute("SELECT salt, password FROM USERS WHERE username = ?", (username,))
-            result = cursor.fetchone()
-            if not result:
+            is_user_exists = cursor.fetchone()
+            if not is_user_exists:
                 print(f"使用者 {username} 不存在。")
                 return False
             # 取得 salt 和儲存的雜湊密碼
@@ -88,9 +89,9 @@ def update_user_password(username : str, old_password : str, new_password : str)
             cursor = conn.cursor()
             
             cursor.execute("SELECT salt, password FROM USERS WHERE username = ?", (username,))
-            result = cursor.fetchone()
+            is_user_exists = cursor.fetchone()
             # 檢查使用者是否存在
-            if (not result):
+            if not is_user_exists:
                 print(f"使用者 {username} 不存在。")
                 return False
             salt, stored_hash = result
@@ -116,7 +117,19 @@ def update_user_password(username : str, old_password : str, new_password : str)
     except sqlite3.Error as e:
         print(f"資料庫操作發生錯誤: {e}")
         return False
-
+def delete_user(username : str):
+    """刪除使用者"""
+    try:
+        with sqlite3.connect("test.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM USERS WHERE username = ?", (username,))
+            if cursor.rowcount == 0:
+                print(f"使用者 {username} 不存在，無法刪除。")
+                return False
+            return True
+    except sqlite3.Error as e:
+        print(f"資料庫操作發生錯誤: {e}")
+        return False
 def is_password_strong(password : str):
     """檢查密碼強度"""
     # 從頭檢查 *\d是否有數字、*[a-z]是否有小寫字母、*[A-Z]是否有大寫字母
